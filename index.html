@@ -86,7 +86,10 @@ async function load(){
   status('Model ready. Upload a photo or try the example.');
 }
 
-function toImage(src){ return new Promise((ok, bad) => { const im = new Image(); im.onload = () => ok(im); im.onerror = bad; im.src = src; }); }
+async function toImage(src){
+  if (!src.startsWith('blob:')) src = URL.createObjectURL(await (await fetch(src)).blob());
+  return new Promise((ok, bad) => { const im = new Image(); im.onload = () => ok(im); im.onerror = bad; im.src = src; });
+}
 
 function preprocess(im){
   const w = im.naturalWidth, h = im.naturalHeight, s = Math.min(SIZE / w, SIZE / h);
