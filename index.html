@@ -3,217 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Trash Detection</title>
-<meta name="description" content="YOLOv8m litter detection with a heatmap and a 0-100 cleanliness score, running in your browser.">
+<title>Trash Detection live demo | Pranay Lachuluri</title>
+<meta name="description" content="YOLOv8m fine-tuned on 59 litter classes: detections, a litter heatmap and a 0-100 cleanliness score, running in your browser.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Trash Detection and Cleanliness Score: live demo">
 <meta property="og:description" content="YOLOv8m fine-tuned on 59 litter classes: detections, a litter heatmap and a 0-100 cleanliness score, running in your browser.">
-<meta property="og:url" content="https://pranayla-trash-detection.static.hf.space/">
-<meta property="og:image" content="https://huggingface.co/spaces/Pranayla/trash-detection/resolve/main/preview.jpg">
+<meta property="og:url" content="https://pranaylachuluri.github.io/demos/trash/">
+<meta property="og:image" content="https://pranaylachuluri.github.io/demos/trash/preview.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="627">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://huggingface.co/spaces/Pranayla/trash-detection/resolve/main/preview.jpg">
-<style>
-:root{--bg:#f7f8f6;--card:#fff;--text:#1c2420;--muted:#5d6a63;--line:#dfe4e0;--accent:#1f7a4d;--accent-text:#fff;--warn:#b54708}
-@media (prefers-color-scheme:dark){:root{--bg:#121614;--card:#1b211e;--text:#e7ece9;--muted:#9aa8a0;--line:#2c3531;--accent:#3fb37a;--accent-text:#0d130f;--warn:#f79009}}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-main{max-width:1100px;margin:0 auto;padding:32px 16px 48px}
-h1{font-size:1.7rem;margin:0 0 6px;letter-spacing:-.01em}
-.sub{color:var(--muted);margin:0 0 24px;max-width:70ch}
-.sub a{color:var(--accent)}
-.controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:20px}
-.btn{appearance:none;border:0;border-radius:8px;padding:10px 16px;font:inherit;font-weight:600;cursor:pointer;background:var(--accent);color:var(--accent-text)}
-.btn.secondary{background:transparent;color:var(--text);border:1px solid var(--line)}
-.btn:disabled{opacity:.5;cursor:default}
-label.slider{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:.95rem;margin-left:auto}
-input[type=range]{accent-color:var(--accent);width:140px}
-#status{width:100%;font-size:.9rem;color:var(--muted);min-height:1.4em}
-.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;min-width:0}
-.panel h2{font-size:.85rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 8px}
-canvas{display:block;width:100%;height:auto;border-radius:8px;background:var(--line)}
-.score{display:flex;align-items:baseline;gap:10px;margin:4px 0 10px}
-.score b{font-size:2.4rem;line-height:1}
-.score span{color:var(--muted)}
-.meter{height:10px;border-radius:5px;background:var(--line);overflow:hidden;margin-bottom:14px}
-.meter i{display:block;height:100%;width:0;background:var(--accent);transition:width .4s}
-ul{margin:0;padding-left:18px}
-.drop{border:2px dashed var(--line);border-radius:12px;padding:28px;text-align:center;color:var(--muted);margin-bottom:20px}
-.drop.over{border-color:var(--accent);color:var(--text)}
-footer{margin-top:28px;color:var(--muted);font-size:.9rem}
-footer a{color:var(--accent)}
-@media (max-width:720px){.grid{grid-template-columns:1fr}label.slider{margin-left:0}}
-</style>
+<meta name="twitter:image" content="https://pranaylachuluri.github.io/demos/trash/preview.jpg">
+<meta http-equiv="refresh" content="0; url=https://huggingface.co/spaces/Pranayla/trash-detection">
+<style>body{margin:0;background:#121614;color:#e7ece9;font:16px/1.5 system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;padding:16px}a{color:#3fb37a}</style>
 </head>
 <body>
-<main>
-  <h1>Trash Detection and Cleanliness Score</h1>
-  <p class="sub">A YOLOv8m model fine-tuned on 59 kinds of litter. Upload a photo to see the detected trash, a heatmap of litter hotspots and a 0–100 cleanliness score. The model runs in your browser, so your photo is never uploaded. <a href="https://github.com/pranaylachuluri/trash-detection-yolov8">Code on GitHub</a></p>
-
-  <div class="drop" id="drop">Drop a photo here, or use the buttons below.</div>
-
-  <div class="controls">
-    <input type="file" id="file" accept="image/*" hidden>
-    <button class="btn" id="pick" disabled>Upload a photo</button>
-    <button class="btn secondary" id="example" disabled>Try the example</button>
-    <label class="slider">Confidence <input type="range" id="conf" min="0.05" max="0.9" step="0.05" value="0.25"> <output id="confv">0.25</output></label>
-    <div id="status">Loading the model (about 100 MB, only the first time)…</div>
-  </div>
-
-  <div class="grid">
-    <div class="panel"><h2>Detections</h2><canvas id="det" width="832" height="624"></canvas></div>
-    <div class="panel"><h2>Litter heatmap</h2><canvas id="heat" width="832" height="624"></canvas></div>
-    <div class="panel" style="grid-column:1/-1">
-      <h2>Cleanliness</h2>
-      <div class="score"><b id="score">–</b><span id="label">Upload a photo to get a score</span></div>
-      <div class="meter"><i id="bar"></i></div>
-      <div id="summary"></div>
-    </div>
-  </div>
-
-  <footer>Built by Pranay Lachuluri, Odra Bira and Sai Rohith Bharadwaj at the University at Buffalo. Validation mAP@50-95 0.158 across 59 classes (44% above a YOLOv8n baseline).</footer>
-</main>
-
-<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.webgpu.min.js"></script>
-<script>
-const NAMES = ["Aerosol","Aluminium blister pack","Aluminium foil","Battery","Broken glass","Carded blister pack","Cigarette","Clear plastic bottle","Corrugated carton","Crisp packet","Disposable food container","Disposable plastic cup","Drink can","Drink carton","Egg carton","Foam cup","Foam food container","Food Can","Food waste","Garbage bag","Glass bottle","Glass cup","Glass jar","Magazine paper","Meal carton","Metal bottle cap","Metal lid","Normal paper","Other carton","Other plastic bottle","Other plastic container","Other plastic cup","Other plastic wrapper","Other plastic","Paper bag","Paper cup","Paper straw","Pizza box","Plastic bottle cap","Plastic film","Plastic glooves","Plastic lid","Plastic straw","Plastic utensils","Polypropylene bag","Pop tab","Rope - strings","Scrap metal","Shoe","Single-use carrier bag","Six pack rings","Spread tub","Squeezable tube","Styrofoam piece","Tissues","Toilet tube","Tupperware","Unlabeled litter","Wrapping paper"];
-const SIZE = 832, IOU = 0.5, MAX_SIDE = 1280;
-const $ = id => document.getElementById(id);
-const status = t => $('status').textContent = t;
-let session = null, current = null, lastRaw = null;
-
-function color(i){ const h = (i * 47) % 360; return `hsl(${h} 85% 50%)`; }
-
-async function load(){
-  if (window.ORT_BASE) ort.env.wasm.wasmPaths = window.ORT_BASE;
-  const providers = ('gpu' in navigator) ? ['webgpu','wasm'] : ['wasm'];
-  try { session = await ort.InferenceSession.create('best.onnx', {executionProviders: providers}); }
-  catch (e) { session = await ort.InferenceSession.create('best.onnx', {executionProviders: ['wasm']}); }
-  $('pick').disabled = $('example').disabled = false;
-  status('Model ready. Upload a photo or try the example.');
-}
-
-async function toImage(src){
-  if (!src.startsWith('blob:')) src = URL.createObjectURL(await (await fetch(src)).blob());
-  return new Promise((ok, bad) => { const im = new Image(); im.onload = () => ok(im); im.onerror = bad; im.src = src; });
-}
-
-function preprocess(im){
-  const w = im.naturalWidth, h = im.naturalHeight, s = Math.min(SIZE / w, SIZE / h);
-  const nw = Math.round(w * s), nh = Math.round(h * s), px = Math.floor((SIZE - nw) / 2), py = Math.floor((SIZE - nh) / 2);
-  const c = new OffscreenCanvas(SIZE, SIZE), g = c.getContext('2d');
-  g.fillStyle = 'rgb(114,114,114)'; g.fillRect(0, 0, SIZE, SIZE); g.drawImage(im, px, py, nw, nh);
-  const d = g.getImageData(0, 0, SIZE, SIZE).data, n = SIZE * SIZE, t = new Float32Array(3 * n);
-  for (let i = 0; i < n; i++) { t[i] = d[4*i] / 255; t[n + i] = d[4*i+1] / 255; t[2*n + i] = d[4*i+2] / 255; }
-  return {tensor: new ort.Tensor('float32', t, [1, 3, SIZE, SIZE]), s, px, py, w, h};
-}
-
-function iou(a, b){
-  const ix = Math.max(0, Math.min(a.x2, b.x2) - Math.max(a.x1, b.x1)), iy = Math.max(0, Math.min(a.y2, b.y2) - Math.max(a.y1, b.y1)), I = ix * iy;
-  return I / ((a.x2 - a.x1) * (a.y2 - a.y1) + (b.x2 - b.x1) * (b.y2 - b.y1) - I + 1e-9);
-}
-
-function postprocess(out, meta, conf){
-  const [, C, N] = out.dims, d = out.data, cand = [];
-  for (let i = 0; i < N; i++) {
-    let best = 0, cls = -1;
-    for (let c = 4; c < C; c++) { const v = d[c * N + i]; if (v > best) { best = v; cls = c - 4; } }
-    if (best < conf) continue;
-    const cx = d[i], cy = d[N + i], bw = d[2*N + i], bh = d[3*N + i];
-    const clip = (v, m) => Math.max(0, Math.min(m, v));
-    cand.push({cls, conf: best,
-      x1: clip((cx - bw/2 - meta.px) / meta.s, meta.w), y1: clip((cy - bh/2 - meta.py) / meta.s, meta.h),
-      x2: clip((cx + bw/2 - meta.px) / meta.s, meta.w), y2: clip((cy + bh/2 - meta.py) / meta.s, meta.h)});
-  }
-  cand.sort((a, b) => b.conf - a.conf);
-  const keep = [];
-  for (const c of cand) if (!keep.some(k => k.cls === c.cls && iou(k, c) > IOU)) keep.push(c);
-  return keep.slice(0, 300);
-}
-
-function jet(v){ // OpenCV COLORMAP_JET
-  const r = Math.min(1, Math.max(0, 1.5 - Math.abs(4*v - 3))), g = Math.min(1, Math.max(0, 1.5 - Math.abs(4*v - 2))), b = Math.min(1, Math.max(0, 1.5 - Math.abs(4*v - 1)));
-  return [r*255, g*255, b*255];
-}
-
-function fit(im){ const s = Math.min(1, MAX_SIDE / Math.max(im.naturalWidth, im.naturalHeight)); return [Math.round(im.naturalWidth * s), Math.round(im.naturalHeight * s), s]; }
-
-function drawDetections(im, dets){
-  const [W, H, k] = fit(im), cv = $('det'), g = cv.getContext('2d');
-  cv.width = W; cv.height = H; g.drawImage(im, 0, 0, W, H);
-  const lw = Math.max(2, Math.round(W / 300)), fs = Math.max(12, Math.round(W / 45));
-  g.font = `600 ${fs}px system-ui, sans-serif`; g.textBaseline = 'top';
-  for (const d of dets) {
-    const x = d.x1 * k, y = d.y1 * k, w = (d.x2 - d.x1) * k, h = (d.y2 - d.y1) * k, col = color(d.cls);
-    g.strokeStyle = col; g.lineWidth = lw; g.strokeRect(x, y, w, h);
-    const t = `${NAMES[d.cls]} ${d.conf.toFixed(2)}`, tw = g.measureText(t).width + 8, ty = y - fs - 6 < 0 ? y : y - fs - 6;
-    g.fillStyle = col; g.fillRect(x, ty, tw, fs + 6); g.fillStyle = '#fff'; g.fillText(t, x + 4, ty + 3);
-  }
-}
-
-function drawHeatmap(im, dets){
-  const [W, H, k] = fit(im), cv = $('heat'), g = cv.getContext('2d');
-  cv.width = W; cv.height = H; g.drawImage(im, 0, 0, W, H);
-  const heat = new Float32Array(W * H);
-  for (const d of dets) {
-    const x1 = Math.floor(d.x1 * k), x2 = Math.floor(d.x2 * k), y1 = Math.floor(d.y1 * k), y2 = Math.floor(d.y2 * k);
-    for (let y = Math.max(0, y1); y < Math.min(H, y2); y++) for (let x = Math.max(0, x1); x < Math.min(W, x2); x++) heat[y * W + x] += d.conf;
-  }
-  let mx = 0; for (const v of heat) if (v > mx) mx = v;
-  const img = g.getImageData(0, 0, W, H), p = img.data;
-  for (let i = 0; i < W * H; i++) {
-    const [r, gg, b] = jet(mx > 0 ? heat[i] / mx : 0);
-    p[4*i] = p[4*i] * 0.65 + r * 0.35; p[4*i+1] = p[4*i+1] * 0.65 + gg * 0.35; p[4*i+2] = p[4*i+2] * 0.65 + b * 0.35;
-  }
-  g.putImageData(img, 0, 0);
-}
-
-function cleanliness(dets, w, h){
-  if (!dets.length) return 100;
-  let p = 0;
-  for (const d of dets) p += ((d.x2 - d.x1) * (d.y2 - d.y1)) / (w * h) * d.conf * 1000;
-  p += dets.length * 3;
-  return Math.round(Math.max(0, Math.min(100, 100 - p)) * 100) / 100;
-}
-const labelOf = s => s >= 80 ? 'Clean' : s >= 50 ? 'Moderately littered' : s >= 25 ? 'Polluted' : 'Highly polluted';
-
-function render(){
-  if (!current || !lastRaw) return;
-  const conf = parseFloat($('conf').value), dets = postprocess(lastRaw, current.meta, conf);
-  drawDetections(current.im, dets); drawHeatmap(current.im, dets);
-  const s = cleanliness(dets, current.meta.w, current.meta.h);
-  $('score').textContent = s.toFixed(0); $('label').textContent = `${labelOf(s)} · ${dets.length} trash object${dets.length === 1 ? '' : 's'} detected`;
-  $('bar').style.width = s + '%';
-  const counts = {}; for (const d of dets) counts[NAMES[d.cls]] = (counts[NAMES[d.cls]] || 0) + 1;
-  const rows = Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([n, c]) => `<li>${n}: ${c}</li>`).join('');
-  $('summary').innerHTML = dets.length
-    ? `<ul>${rows}</ul><p style="color:var(--muted);margin:10px 0 0">The heatmap shows where litter is concentrated. The score combines the number of objects, their size and the model's confidence.</p>`
-    : '<p style="margin:0">No trash detected at this confidence. Try lowering the threshold.</p>';
-}
-
-async function run(src){
-  if (!session) return;
-  status('Detecting…');
-  try {
-    const im = await toImage(src), meta = preprocess(im), t0 = performance.now();
-    const out = await session.run({images: meta.tensor});
-    lastRaw = out[Object.keys(out)[0]]; current = {im, meta};
-    render();
-    status(`Done in ${((performance.now() - t0) / 1000).toFixed(1)} s.`);
-  } catch (e) { console.error(e); status('Something went wrong: ' + e.message); }
-}
-
-$('pick').onclick = () => $('file').click();
-$('file').onchange = e => { const f = e.target.files[0]; if (f) run(URL.createObjectURL(f)); };
-$('example').onclick = () => run('example.jpg');
-$('conf').oninput = e => { $('confv').textContent = (+e.target.value).toFixed(2); render(); };
-const drop = $('drop');
-drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
-drop.ondragleave = () => drop.classList.remove('over');
-drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); const f = e.dataTransfer.files[0]; if (f) run(URL.createObjectURL(f)); };
-load().catch(e => { console.error(e); status('Could not load the model: ' + e.message); });
-</script>
+<p>Opening the live demo… <a href="https://huggingface.co/spaces/Pranayla/trash-detection">Continue to the Trash Detection demo</a></p>
+<script>location.replace('https://huggingface.co/spaces/Pranayla/trash-detection');</script>
 </body>
 </html>
